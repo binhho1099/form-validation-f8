@@ -1,12 +1,22 @@
 
 function validator(object){
 
+    function getParent(element, selector) {
+        while(element.parentElement){
+            if(element.parentElement.matches(selector)){
+                return element.parentElement;
+            }
+            element = element.parentElement;
+        }
+    }
+
     let selectorRule = {};
 
     // ham thuc hien validated
     function validate(inputElement, rule){
+        
         let errorMessage;
-        let errorElement = inputElement.parentElement.querySelector(object.errorSelector);
+        let errorElement = getParent(inputElement, object.formGroupSelector).querySelector(object.errorSelector);
         let rules = selectorRule[rule.selector];
 
         for(let i = 0; i < rules.length; i++){
@@ -16,22 +26,50 @@ function validator(object){
 
         if(errorMessage){
             errorElement.innerText = errorMessage;
-            inputElement.parentElement.classList.add('invalid');
+            getParent(inputElement, object.formGroupSelector).classList.add('invalid');
         } else {
             errorElement.innerText = '';
-            inputElement.parentElement.classList.remove('invalid');
+            getParent(inputElement, object.formGroupSelector).classList.remove('invalid');
         }
+        return !errorMessage;
     }
     // lay element cua form can validated
     let formElement = document.querySelector(object.form);
     if(formElement){
-
+        // submit form
         formElement.onsubmit = function(event){
             event.preventDefault();
+
+            let isFormValid = true;
+
+
             object.rules.forEach(rule => {
                 let inputElement = formElement.querySelector(rule.selector);
-                validate(inputElement,rule);
-            })
+                let isValid = validate(inputElement,rule);
+                if(!isValid){
+                    isFormValid = false;
+                }
+            });
+
+            
+
+            if(isFormValid){
+                // Trường hợp submit với javascript
+                if(typeof object.onSubmit === 'function'){
+                    let enableInput = formElement.querySelectorAll('[name]');
+
+                    let formValue = Array.from(enableInput).reduce((value, input)=>{
+                        value[input.name] = input.value;
+                        return value;
+                    },{})
+                    object.onSubmit(formValue)
+                } 
+                // Trường hợp submit với mặc định
+                else{
+                    formElement.submit();
+                }
+
+            }
         }
 
 
@@ -44,7 +82,7 @@ function validator(object){
                 selectorRule[rule.selector] = [rule.test];
             }
 
-            let inputElement = formElement.querySelector(rule.selector);
+            let inputElement = formElement.querySelector(rule.selector);  
             if(inputElement){
                 // xử lí trường hợp blur khỏi input
                 inputElement.onblur = () => {
@@ -105,6 +143,7 @@ validator.isPasswordConfirmation = function (selector, getConfirmValue, message)
 
 validator({
     form: '#form-1',
+    formGroupSelector: '.form-group',
     errorSelector: '.form-message',
     rules: [
         validator.isRequired('#fullname'),
@@ -113,6 +152,9 @@ validator({
         validator.isRequired('#password'),
         validator.isPassword('#password', 8),
         validator.isRequired('#password_confirmation'),
-        validator.isPasswordConfirmation('#password_confirmation', () => document.querySelector('#password').value, 'Mày nhập sai mẹ mật khẩu rồi')
-    ]
+        validator.isPasswordConfirmation('#password_confirmation', () => document.querySelector('#password').value, 'Mày nhập sai mẹ mật khẩu rồi'),
+    ],
+    onSubmit:(data)=>{
+        console.log(data);
+    }
 });
