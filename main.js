@@ -20,7 +20,16 @@ function validator(object){
         let rules = selectorRule[rule.selector];
 
         for(let i = 0; i < rules.length; i++){
-            errorMessage = rules[i](inputElement.value)
+            switch(inputElement.type){
+                case 'radio':
+                case 'checkbox':
+                    errorMessage = rules[i](
+                        formElement.querySelector(rule.selector + ':checked')
+                    );
+                    break;
+                default:
+                    errorMessage = rules[i](inputElement.value);
+            }
             if(errorMessage) break;
         }
 
@@ -81,21 +90,22 @@ function validator(object){
             }else{
                 selectorRule[rule.selector] = [rule.test];
             }
-
-            let inputElement = formElement.querySelector(rule.selector);  
-            if(inputElement){
-                // xử lí trường hợp blur khỏi input
-                inputElement.onblur = () => {
-                    validate(inputElement,rule);
+            let inputElements = formElement.querySelectorAll(rule.selector);  
+            Array.from(inputElements).forEach(function (inputElement) {
+                if(inputElement){
+                    // xử lí trường hợp blur khỏi input
+                    inputElement.onblur = () => {
+                        validate(inputElement,rule);
+                    }
+    
+                    // xử lí trường hợp mỗi khi user nhập
+                    inputElement.oninput = () => {
+                        let errorElement = inputElement.parentElement.querySelector('.form-message');
+                        errorElement.innerText = '';
+                        inputElement.parentElement.classList.remove('invalid');
+                    }
                 }
-
-                // xử lí trường hợp mỗi khi user nhập
-                inputElement.oninput = () => {
-                    let errorElement = inputElement.parentElement.querySelector('.form-message');
-                    errorElement.innerText = '';
-                    inputElement.parentElement.classList.remove('invalid');
-                }
-            }
+            })
         })
 
 
@@ -108,7 +118,7 @@ validator.isRequired = function (selector){
     return {
         selector,
         test: function(value){
-            return value.trim() ? undefined: 'Nhập vô đây. LẸ!!!'
+            return value ? undefined: 'Bạn chưa nhập trường này!'
         }
     }
 }
@@ -118,7 +128,7 @@ validator.isEmail = function (selector){
         selector,
         test: function(value){
             let rereg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-            return rereg.test(value) ? undefined : 'Mẹ mày!!! nhập email ok, đừng tưởng bố mày không biết'
+            return rereg.test(value) ? undefined : 'Bạn cần nhập email, vd: abc@gmail.com'
         }
     }
 }
@@ -136,10 +146,12 @@ validator.isPasswordConfirmation = function (selector, getConfirmValue, message)
     return {
         selector,
         test: function(value){
-            return value === getConfirmValue() ? undefined : message || 'Mật khẩu nhập lại chưa đúng thằng kia'
+            return value === getConfirmValue() ? undefined : message || 'Mật khẩu nhập lại chưa chính xác'
         }
     }
 }
+
+
 
 validator({
     form: '#form-1',
@@ -152,9 +164,11 @@ validator({
         validator.isRequired('#password'),
         validator.isPassword('#password', 8),
         validator.isRequired('#password_confirmation'),
-        validator.isPasswordConfirmation('#password_confirmation', () => document.querySelector('#password').value, 'Mày nhập sai mẹ mật khẩu rồi'),
+        validator.isRequired('input[name="gender"]'),
+        validator.isPasswordConfirmation('#password_confirmation', () => document.querySelector('#password').value, 'Bạn nhập lại mật khẩu chưa chính xác'),
     ],
     onSubmit:(data)=>{
         console.log(data);
     }
 });
+

@@ -86,7 +86,6 @@
   .form-submit {
     outline: none;
     background-color: #1dbfaf;
-    margin-top: 12px;
     padding: 12px 16px;
     font-weight: 600;
     color: #fff;
@@ -104,4 +103,16 @@
   .spacer {
     margin-top: 36px;
   }
-  
+  .input-gender{
+    display: flex;
+    justify-content: space-around;
+  }
+  .input-gender__item {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+  }
+  input[type="radio"]{
+    width: 16px;
+    cursor: pointer;
+  }
